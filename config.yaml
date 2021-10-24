@@ -1,0 +1,51 @@
+debug: false
+
+# download parameters
+with_async: true
+sem: 1000
+n_load: 8000
+min_id: 0
+total_images: 5462418 # or None
+
+# paths
+pro_path: E:/yacup
+rel_paths:
+  image_urls_path: images.json
+  captions_path: meta.json
+  images_path: images
+  save_path: last.pt
+  logs_path: bad.log
+  val_data_path: val/datasets
+  val_gt_path: val/gt.json
+
+# image size
+size: 256
+
+# training parameters
+batch_size: 32
+num_steps: 5000
+n_sample: 50000
+num_workers: 1
+head_lr: 0.001
+image_encoder_lr: 0.0001
+text_encoder_lr: 1.0e-05
+weight_decay: 0.001
+patience: 2
+factor: 0.8
+epochs: 100
+
+# models parameters
+model_name: resnet50
+image_embedding: 2048
+text_encoder_model: distilbert-base-multilingual-cased
+text_embedding: 768
+text_tokenizer: distilbert-base-multilingual-cased
+max_length: 200
+pretrained: true # for both image encoder and text encoder
+trainable: true # for both image encoder and text encoder
+temperature: 1.0
+
+# for projection head; used for both image and text encoders
+num_projection_layers: 1
+projection_dim: 256
+dropout: 0.1

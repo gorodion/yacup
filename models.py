@@ -1,13 +1,14 @@
 import timm
+import torch
 from torch import nn
-from transformers import AutoModel
 import torch.nn.functional as F
+from transformers import AutoModel
 
-import config as CFG
+from config import cfg
 
 class ImageEncoder(nn.Module):
     def __init__(
-            self, model_name=CFG.model_name, pretrained=CFG.pretrained, trainable=CFG.trainable
+            self, model_name=cfg.model_name, pretrained=cfg.pretrained, trainable=cfg.trainable
     ):
         super().__init__()
         self.model = timm.create_model(
@@ -21,7 +22,7 @@ class ImageEncoder(nn.Module):
 
 
 class TextEncoder(nn.Module):
-    def __init__(self, model_name=CFG.text_encoder_model, pretrained=CFG.pretrained, trainable=CFG.trainable):
+    def __init__(self, model_name=cfg.text_encoder_model, pretrained=cfg.pretrained, trainable=cfg.trainable):
         super().__init__()
         if pretrained:
             self.model = AutoModel.from_pretrained(model_name)
@@ -45,8 +46,8 @@ class ProjectionHead(nn.Module):
     def __init__(
             self,
             embedding_dim,
-            projection_dim=CFG.projection_dim,
-            dropout=CFG.dropout
+            projection_dim=cfg.projection_dim,
+            dropout=cfg.dropout
     ):
         super().__init__()
         self.projection = nn.Linear(embedding_dim, projection_dim)
@@ -68,9 +69,9 @@ class ProjectionHead(nn.Module):
 class CLIPModel(nn.Module):
     def __init__(
             self,
-            temperature=CFG.temperature,
-            image_embedding=CFG.image_embedding,
-            text_embedding=CFG.text_embedding,
+            temperature=cfg.temperature,
+            image_embedding=cfg.image_embedding,
+            text_embedding=cfg.text_embedding,
     ):
         super().__init__()
         self.image_encoder = ImageEncoder()
@@ -109,3 +110,9 @@ class CLIPModel(nn.Module):
             return loss
         elif reduction == "mean":
             return loss.mean()
+
+def get_model(model_path):
+    model = CLIPModel().to(cfg.device)
+    model.load_state_dict(torch.load(model_path, map_location=cfg.device))
+    model.eval()
+    return model

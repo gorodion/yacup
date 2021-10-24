@@ -4,12 +4,13 @@ import numpy as np
 from PIL import Image
 import cv2
 import torch
-from torch.utils.data import IterableDataset, Dataset
+from torch.utils.data import IterableDataset, Dataset, DataLoader
+import torch
+import albumentations as A
 
 from config import logger
 from utils import parse_json_generator
-import config as CFG
-from .data_utils import get_transforms
+from config import cfg
 
 
 class CLIPDataset(IterableDataset):
@@ -25,15 +26,15 @@ class CLIPDataset(IterableDataset):
     def iter_batch(self):
         images_ids = {int(i.split('.')[0]) for i in os.listdir('images')}
         captions = random.choices(
-            [cap_obj for cap_obj in parse_json_generator(CFG.captions_path)
+            [cap_obj for cap_obj in parse_json_generator(cfg.captions_path)
                         if cap_obj['image'] in images_ids],
-            k=CFG.n_sample
+            k=cfg.n_sample
         )
         encoded_captions = self.tokenizer(
             self.make_choice_captions(captions),
             padding=True,
             truncation=True,
-            max_length=CFG.max_length
+            max_length=cfg.max_length
         )
         for i in range(len(captions)):
             image_id = captions[i]["image"]
@@ -49,10 +50,9 @@ class CLIPDataset(IterableDataset):
                 for key, values in encoded_captions.items()
             }
 
-            if CFG.debug:
-                item['orig_image'] = cv2.resize(img, (CFG.size, CFG.size))
+            if cfg.debug:
+                item['orig_image'] = cv2.resize(img, (cfg.size, cfg.size))
                 item['caption'] = captions[i]['queries'][0]
-
             img = self.transforms(image=img)['image']
             item['image'] = torch.tensor(img).permute(2, 0, 1).float()
             yield item
@@ -76,3 +76,38 @@ class ImageDataset(Dataset):
 
     def __len__(self):
         return len(self.img_paths)
+
+
+def get_transforms(mode="train"):
+    if mode == "train":
+        return A.Compose(
+            [
+                A.Resize(cfg.size, cfg.size, always_apply=True),
+                A.Normalize(max_pixel_value=255.0, always_apply=True),
+            ]
+        )
+    else:
+        return A.Compose(
+            [
+                A.Resize(cfg.size, cfg.size, always_apply=True),
+                A.Normalize(max_pixel_value=255.0, always_apply=True),
+            ]
+        )
+
+
+def build_loaders(tokenizer, transforms, mode="train"):
+    dataset = CLIPDataset(tokenizer, transforms)
+    dataloader = DataLoader(
+        dataset,
+        batch_size=cfg.batch_size,
+        num_workers=cfg.num_workers,
+        drop_last=True,
+        # shuffle=True if mode == "train" else False
+    )
+    return dataset, dataloader
+
+
+if __name__ == '__main__':
+    from transformers import AutoTokenizer
+    dset, dload = build_loaders(AutoTokenizer.from_pretrained(cfg.text_tokenizer), get_transforms(mode='train'))
+    print(next(iter(dload)))

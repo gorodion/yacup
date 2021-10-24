@@ -5,11 +5,10 @@ import numpy as np
 import json
 
 from config import tqdm, logger
+from config import cfg
 from models import CLIPModel
 from inference import make_predictions
-from .data_utils import get_transforms, build_loaders
-import config as CFG
-
+from dataset import build_loaders, get_transforms
 
 class AvgMeter:
     def __init__(self, name="Metric"):
@@ -57,18 +56,18 @@ def calc_accuracy(gt, pred, strict=True, average=False):
 
 
 def evaluate(model, tokenizer):
-    gt = json.load(open(CFG.val_gt_path))
+    gt = json.load(open(cfg.val_gt_path))
     pred = make_predictions(model, tokenizer)
     return calc_accuracy(gt, pred)
 
 
 def train_epoch(model, train_loader, optimizer, lr_scheduler, step):
     loss_meter = AvgMeter()
-    total = CFG.n_sample // CFG.batch_size * CFG.batch_size
+    total = cfg.n_sample // cfg.batch_size * cfg.batch_size
     tqdm_obj = tqdm(train_loader, total=total, smoothing=0.8, leave=False)
     # tqdkm_obj = tqdm(train_loader, total=len(train_loader), smoothing=0.8, leave=False)
     for batch in train_loader:
-        batch = {k: v.to(CFG.device) for k, v in batch.items() if k not in ('caption', 'orig_image')}
+        batch = {k: v.to(cfg.device) for k, v in batch.items() if k not in ('caption', 'orig_image')}
         loss = model(batch)
         optimizer.zero_grad()
         loss.backward()
@@ -88,29 +87,29 @@ def train_epoch(model, train_loader, optimizer, lr_scheduler, step):
 
 def train():
     print(logger, 'is active')
-    tokenizer = AutoTokenizer.from_pretrained(CFG.text_tokenizer)
+    tokenizer = AutoTokenizer.from_pretrained(cfg.text_tokenizer)
     _, train_loader = build_loaders(tokenizer, get_transforms(mode='train'), mode='train')
 
     # if pretrained:
     #     model = get_model(CFG.save_path)
     # else:
     #     model = CLIPModel().to(CFG.device)
-    model = CLIPModel().to(CFG.device)
+    model = CLIPModel().to(cfg.device)
     params = [
-        {"params": model.image_encoder.parameters(), "lr": CFG.image_encoder_lr},
-        {"params": model.text_encoder.parameters(), "lr": CFG.text_encoder_lr},
+        {"params": model.image_encoder.parameters(), "lr": cfg.image_encoder_lr},
+        {"params": model.text_encoder.parameters(), "lr": cfg.text_encoder_lr},
         {"params": itertools.chain(
             model.image_projection.parameters(), model.text_projection.parameters()
-        ), "lr": CFG.head_lr, "weight_decay": CFG.weight_decay}
+        ), "lr": cfg.head_lr, "weight_decay": cfg.weight_decay}
     ]
     optimizer = torch.optim.AdamW(params, weight_decay=0.)
     lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="max", patience=CFG.patience, factor=CFG.factor
+        optimizer, mode="max", patience=cfg.patience, factor=cfg.factor
     )
     step = "epoch"
 
     best_acc = 81.
-    for epoch in range(CFG.epochs):
+    for epoch in range(cfg.epochs):
         print(f"Epoch: {epoch + 1}")
         model.train()
         train_loss = train_epoch(model, train_loader, optimizer, lr_scheduler, step)
@@ -120,7 +119,7 @@ def train():
         valid_acc_avg = np.mean(list(valid_acc.values()))
         if valid_acc_avg > best_acc:
             best_acc = valid_acc_avg
-            torch.save(model.state_dict(), CFG.save_path)
+            torch.save(model.state_dict(), cfg.save_path)
             print("Saved Best Model!")
         lr_scheduler.step(valid_acc_avg)
 
