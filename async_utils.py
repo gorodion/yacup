@@ -1,9 +1,11 @@
 import aiohttp
 import asyncio
+import nest_asyncio
 
 from config import logger
-import config as CFG
+from config import cfg
 
+nest_asyncio.apply()
 
 async def img_by_url(url, image_id, session, q, sem):
     content = None
@@ -23,7 +25,7 @@ async def img_by_url(url, image_id, session, q, sem):
 
 async def parse_images_async(imgs, q):
     # timeout = aiohttp.ClientTimeout(total=None)
-    sem = asyncio.Semaphore(CFG.sem)
+    sem = asyncio.Semaphore(cfg.sem)
     async with aiohttp.ClientSession() as session:
         tasks = []
         for img_obj in imgs:

@@ -5,7 +5,7 @@ import os
 from multiprocessing import Queue
 
 from config import logger
-import config as CFG
+from config import cfg
 
 
 def img_by_url(url, image_id, q):
@@ -30,7 +30,7 @@ def write_images(q: Queue):
         image_id, img_content, url = data
         try:
             if img_content is not None:
-                img = Image.open(BytesIO(img_content)).convert('RGB').resize((CFG.size,)*2)
-                img.save(os.path.join(CFG.images_path, str(image_id) + '.jpg'))
+                img = Image.open(BytesIO(img_content)).convert('RGB').resize((cfg.size,) * 2)
+                img.save(os.path.join(cfg.images_path, str(image_id) + '.jpg'))
         except Exception as exc:
             logger(image_id, type(exc).__name__, url, exc)

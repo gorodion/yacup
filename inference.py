@@ -4,22 +4,24 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-import config as CFG
-from train.dataset import ImageDataset # TODO dataset to separate class
+from config import cfg
+from dataset import ImageDataset
+
 
 def get_image_embeddings(model, image_dl):
     valid_image_embeddings = []
     with torch.no_grad():
         for imgs in image_dl:
-            image_features = model.image_encoder(imgs.to(CFG.device))
+            image_features = model.image_encoder(imgs.to(cfg.device))
             image_embeddings = model.image_projection(image_features)
             valid_image_embeddings.append(image_embeddings)
     return torch.cat(valid_image_embeddings)
 
+
 def get_text_embeddings(tokenizer, model, classes):
-    encoded_classes = tokenizer(classes, padding=True, truncation=True, max_length=CFG.max_length)
+    encoded_classes = tokenizer(classes, padding=True, truncation=True, max_length=cfg.max_length)
     classes_dict = {
-        key: torch.tensor(values).to(CFG.device)
+        key: torch.tensor(values).to(cfg.device)
         for key, values in encoded_classes.items()
     }
     with torch.no_grad():
@@ -29,10 +31,11 @@ def get_text_embeddings(tokenizer, model, classes):
         text_embeddings = model.text_projection(text_features)
     return text_embeddings
 
+
 def make_predictions(model, tokenizer):
     output = {}
 
-    for dir in Path(CFG.val_data_path).iterdir():
+    for dir in Path(cfg.val_data_path).iterdir():
         ds_name = dir.stem
         if ds_name == '.ipynb_checkpoints':
             continue
@@ -43,7 +46,7 @@ def make_predictions(model, tokenizer):
         with open(dir / 'classes.json') as f:
             classes = json.load(f)
         im_ds = ImageDataset(img_paths, mode='val')
-        dl = DataLoader(im_ds, batch_size=CFG.batch_size, num_workers=CFG.num_workers, shuffle=False)
+        dl = DataLoader(im_ds, batch_size=cfg.batch_size, num_workers=cfg.num_workers, shuffle=False)
         image_embeddings = get_image_embeddings(model, dl)
         text_embeddings = get_text_embeddings(tokenizer, model, classes)
 
