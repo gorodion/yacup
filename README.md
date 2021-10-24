@@ -1,7 +1,7 @@
 # CLIP training
 
 ## Настройка конфига
-config.yaml - файл с конфигом. Необходимо указать:
+`config.yaml` - файл с конфигом. Необходимо указать:
 - `pro_path` - путь до папки с проектом
 - `image_urls_path` - путь до [images.json](https://cvlab.s3.yandex.net/mlcup2021/images.json) - файл с ссылками на изображения
 - `captions_path` - путь до [captions.json](https://cvlab.s3.yandex.net/mlcup2021/metadata.json) - файл с подписями к изображениям
