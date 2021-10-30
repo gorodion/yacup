@@ -1,5 +1,5 @@
 # CLIP training
-
+Обучение модели CLIP на основе данных, предоставленных Яндексом в рамках соревнования [ML challenge Yandex Cup 2021 (CV)](https://yandex.ru/cup/ml/analysis/#CV)
 ## Настройка конфига
 `config.yaml` - файл с конфигом. Необходимо указать:
 - `pro_path` - путь до папки с проектом
